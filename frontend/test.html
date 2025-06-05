@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Plaid Sandbox Test</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+  <button id="link-button">Connect Bank</button>
+  <div id="output"></div>
+
+  <script>
+    let accessToken = "";
+
+    fetch('http://localhost:8000/link-token')
+      .then(res => res.json())
+      .then(data => {
+        const handler = Plaid.create({
+          token: data.link_token,
+          onSuccess: function(public_token, metadata) {
+            console.log("Public token received: ", public_token);
+
+            // Send public_token to backend
+            fetch('http://localhost:8000/exchange-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                public_token: public_token,
+                institution_name: metadata.institution?.name || "Unknown Bank",
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              console.log("Exchange token response: ", data);
+
+              accessToken = data.access_token;
+
+              console.log("Access token to be sent:", accessToken);
+
+              fetch("http://localhost:8000/transactions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json"},
+                body: JSON.stringify({ access_token: accessToken})
+              })
+              .then(res => res.json())
+              .then(data => {
+                console.log("Transactions response:", data);
+
+                document.querySelector("#output").textContent = JSON.stringify(data.transactions, null, 2);
+              });
+            });
+          }
+        });
+        document.getElementById('link-button').onclick = () => handler.open();
+      });
+  </script>
+</body>
+</html>
