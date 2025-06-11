@@ -1,3 +1,4 @@
+# creates database schema
 from backend.db import Base, engine
 from backend.models import User, BankItem, Account, Transaction
 

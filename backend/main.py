@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from backend.plaid_utils import create_link_token, exchange_public_token, get_transactions
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, get_transactions
+from backend.services.bank_item_service import save_bank_item
+from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel
 # import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from backend.db import sessionlocal
 from backend.models import BankItem
 from backend.utils.crypto import encrypt, decrypt
@@ -17,13 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class TokenModel(BaseModel):
-    public_token: str
-    institution_name: str
-
-class AccessModel(BaseModel):
-    access_token: str
-
 @app.get("/link-token")
 def get_link_token():
     return create_link_token()
@@ -37,18 +31,12 @@ def exchange_token(body: TokenModel):
     item_id = plaid_response["item_id"]
     institution_name = body.institution_name
 
-    db = sessionlocal()
-    new_item = BankItem(
+    new_item = save_bank_item(
         user_id=1,
         item_id=item_id,
-        access_token=access_token_encrypted,
+        access_token_encrypted=access_token_encrypted,
         institution_name=institution_name
     )
-
-    db.add(new_item)
-    db.commit()
-    db.refresh(new_item)
-    db.close()
 
     return {
         "message": "Bank item saved",
@@ -61,6 +49,11 @@ def exchange_token(body: TokenModel):
 def transactions(body: AccessModel):
     access_token = decrypt(body.access_token)
     return get_transactions(access_token)
+
+# @app.get("/sync-transactions")
+# def sync(sync_request: SyncRequestModel):
+#     result = sync_transactions(sync_request.item_id)
+#     return result
 
 # if __name__ == "__main__":
 #     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

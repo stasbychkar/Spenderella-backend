@@ -8,6 +8,7 @@
   <button id="link-button">Connect Bank</button>
   <div id="output"></div>
 
+
   <script>
     let accessToken = "";
 
@@ -35,18 +36,18 @@
               accessToken = data.access_token;
 
               console.log("Access token to be sent:", accessToken);
+              // Fetching transactions
+              // fetch("http://localhost:8000/transactions", {
+              //   method: "POST",
+              //   headers: { "Content-Type": "application/json"},
+              //   body: JSON.stringify({ access_token: accessToken})
+              // })
+              // .then(res => res.json())
+              // .then(data => {
+              //   console.log("Transactions response:", data);
 
-              fetch("http://localhost:8000/transactions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json"},
-                body: JSON.stringify({ access_token: accessToken})
-              })
-              .then(res => res.json())
-              .then(data => {
-                console.log("Transactions response:", data);
-
-                document.querySelector("#output").textContent = JSON.stringify(data.transactions, null, 2);
-              });
+              //   document.querySelector("#output").textContent = JSON.stringify(data.transactions, null, 2);
+              // });
             });
           }
         });

@@ -53,3 +53,7 @@ def get_transactions(access_token):
     }
     res = requests.post(url, json=data, headers=headers)
     return res.json()
+
+# def sync_transactions(item_id):
+#     url = f"{base_url}/transactions/sync"
+#     headers = {"Content-Type": "application/json"}

@@ -1,0 +1,5 @@
+from backend.utils.crypto import decrypt
+
+token = decrypt("gAAAAABoPSI5bCW555Rm-2DxDse3chE8epXqhoJR9m6kLHvELc_lUPwySZFfKtHvow5oQyNhNWF2-T4-fCBRqhAdq9MiwpNTeVoxYHvqEEpeGEyGEHGhG4-vSqCmSwddbbaxKLMynKJld8Ysv6C0vK6VDIj0jKrZhg==")
+
+print(token)

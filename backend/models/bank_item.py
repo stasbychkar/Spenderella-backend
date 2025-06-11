@@ -9,3 +9,4 @@ class BankItem(Base):
     item_id = Column(String) # from Plaid
     access_token = Column(String) # will encrypt this
     institution_name = Column(String)
+    cursor = Column(String, nullable=True)
