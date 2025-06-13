@@ -6,11 +6,11 @@
 </head>
 <body>
   <button id="link-button">Connect Bank</button>
+  <button id="sync-button">Sync Transactions</button>
   <div id="output"></div>
 
-
   <script>
-    let accessToken = "";
+    let accessToken = "access-sandbox-b379a0dc-85ba-4b4e-8f2d-8761dd8fb6da";
 
     fetch('http://localhost:8000/link-token')
       .then(res => res.json())
@@ -53,6 +53,25 @@
         });
         document.getElementById('link-button').onclick = () => handler.open();
       });
+
+      // sync button
+      document.getElementById("sync-button").addEventListener("click", () => {
+        // fetch("http://localhost:8000/sync-transactions", {
+        //   method: "POST",
+        //   headers: {"Content-Type": "application/json" },
+        //   body: JSON.stringify({
+        //     access_token: accessToken,
+        //     // cursor: cursor
+        //   })
+        // })
+        // .then(res => res.json())
+        // .then(data => {
+        //   console.log("Transactions sync result: ", data);
+        //   document.getElementById("output").textContent = JSON.stringify(data.added, null, 2);
+        // })
+        // .catch(err => console.log("Error syncing: ", err));
+        fetch("http://localhost:8000/sync-all-transactions", { method: "POST" })
+      })
   </script>
 </body>
 </html>

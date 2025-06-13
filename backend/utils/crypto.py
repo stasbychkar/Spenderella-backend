@@ -10,7 +10,7 @@ def encrypt(text: str) -> str:
         return fernet.encrypt(text.encode()).decode()
     except Exception as e:
         print("DECRYPTION ERROR:", e)
-        raise
+        return None
 
 
 def decrypt(token: str) -> str:
@@ -18,4 +18,4 @@ def decrypt(token: str) -> str:
         return fernet.decrypt(token.encode()).decode()
     except Exception as e:
         print("DECRYPTION ERROR:", e)
-        raise
+        return None

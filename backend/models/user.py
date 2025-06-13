@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
 from backend.db import Base
 
+# MVP: single-user app
+
 class User(Base):
     __tablename__ = "users"
 
