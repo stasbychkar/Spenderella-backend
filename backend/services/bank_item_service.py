@@ -4,7 +4,7 @@ from backend.models import BankItem
 def save_bank_item(user_id: int, plaid_item_id: str, access_token_encrypted: str, institution_name: str):
     db = sessionlocal()
     new_item = BankItem(
-        user_id=1,
+        user_id=user_id,
         plaid_item_id=plaid_item_id,
         access_token_encrypted=access_token_encrypted,
         institution_name=institution_name

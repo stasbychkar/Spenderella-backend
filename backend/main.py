@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_transactions, sync_all_transactions
 from backend.services.bank_item_service import save_bank_item
+from backend.services.accounts_service import save_accounts
 from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel
+from backend.utils.plaid_utils import sync_accounts
 # import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from backend.db import sessionlocal
@@ -30,24 +32,24 @@ def exchange_token(body: TokenModel):
     access_token_encrypted = encrypt(access_token)
     plaid_item_id = plaid_response["item_id"]
     institution_name = body.institution_name
+    user_id = 1 # hardcoded
 
     new_item = save_bank_item(
-        user_id=1, # hardcoded
+        user_id=user_id,
         plaid_item_id=plaid_item_id,
         access_token_encrypted=access_token_encrypted,
         institution_name=institution_name
     )
+
+    # Sync and save accounts
+    accounts = sync_accounts(access_token_encrypted)
+    save_accounts(accounts, plaid_item_id, user_id)
 
     return {
         "message": "Bank item saved",
         "item_id": plaid_item_id,
         "access_token": access_token_encrypted,
     }
-
-# @app.post("/transactions")
-# def transactions(body: AccessModel):
-#     access_token = decrypt(body.access_token)
-#     return get_transactions(access_token)
 
 @app.post("/sync-transactions")
 def sync(sync_request: SyncRequestModel):
@@ -58,6 +60,3 @@ def sync(sync_request: SyncRequestModel):
 def sync_all():
     sync_all_transactions()
     return {"message": "Synced all transactions"}
-
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
