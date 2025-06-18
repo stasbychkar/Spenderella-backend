@@ -1,6 +1,7 @@
 import os
 import requests
 import plaid
+import logging
 from plaid import Configuration, ApiClient
 from plaid.api import plaid_api
 from dotenv import load_dotenv
@@ -18,7 +19,7 @@ client_id = os.getenv("PLAID_CLIENT_ID")
 secret = os.getenv("PLAID_SECRET")
 env = os.getenv("PLAID_ENV")
 
-# creating client using Plaid's SDK
+# Create client using Plaid's SDK
 configuration = Configuration(
     host=plaid.Environment.Sandbox,
     api_key={
@@ -28,8 +29,26 @@ configuration = Configuration(
 )
 api_client = ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
+# ------------------------
+
+# Set up logger
+logger = logging.getLogger("plaid_calls")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler("backend/logs/plaid_api_calls.log")
+formatter = logging.Formatter('%(asctime)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+# Logging in the terminal
+# stream_handler = logging.StreamHandler()
+# stream_handler.setFormatter(formatter)
+# logger.addHandler(stream_handler)
+
+def log_plaid_call(endpoint_name, details=""):
+    logger.info(f"PLAID API CALL: {endpoint_name} | {details}")
+# ------------------------
 
 def create_link_token():
+    log_plaid_call("link_token_create")
     response = plaid_client.link_token_create({
         'user': {'client_user_id': '1'}, # hardcoded internal user ID
         "client_name": "Spenderella",
@@ -40,6 +59,7 @@ def create_link_token():
     return response.to_dict()
 
 def exchange_public_token(public_token):
+    log_plaid_call("item_public_token_exchange")
     exchange_request = ItemPublicTokenExchangeRequest(public_token)
     exchange_response = plaid_client.item_public_token_exchange(exchange_request)
     # access_token = exchange_response['access_token']
@@ -47,6 +67,7 @@ def exchange_public_token(public_token):
 
 def sync_accounts(access_token_encrypted: str):
     access_token = decrypt(access_token_encrypted)
+    log_plaid_call("accounts_get", f"token_hash={hash(access_token)}")
     response = plaid_client.accounts_get(AccountsGetRequest(access_token=access_token))
     return response.accounts
 
@@ -55,20 +76,17 @@ def sync_transactions(access_token: str, cursor: str=None):
             access_token=access_token
         )
     response = plaid_client.transactions_sync(request)
-    # transactions = response['added']
     
     while (response['has_more']):
         request = TransactionsSyncRequest(
             access_token=access_token,
             cursor=response['next_cursor']
         )
-        response = plaid_client.transactions_sync(request)
-        # transactions += response['added']
-        repponse += response
+        this_response = plaid_client.transactions_sync(request)
+        log_plaid_call("transactions_sync PAGE", f"next_cursor={response['next_cursor']}")
+        response += this_response
     
-    # for testing purposes
-    # print(response)
-    
+    log_plaid_call("transactions_sync COMPLETE", f"added={len(response['added'])}")
     return response.to_dict()
 
 def sync_all_transactions(user_id: int = 1): # hardcoded for now

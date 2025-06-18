@@ -48,13 +48,7 @@ def exchange_token(body: TokenModel):
     return {
         "message": "Bank item saved",
         "item_id": plaid_item_id,
-        "access_token": access_token_encrypted,
     }
-
-@app.post("/sync-transactions")
-def sync(sync_request: SyncRequestModel):
-    result = sync_transactions(sync_request.access_token, sync_request.cursor)
-    return result
 
 @app.post('/sync-all-transactions')
 def sync_all():
