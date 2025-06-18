@@ -55,6 +55,7 @@ def create_link_token():
         "products": ["transactions"],
         "country_codes": ["US"],
         "language": "en",
+        "webhook": "https://fa07-2601-600-9380-ca0-4dc5-8b48-1a4e-4b57.ngrok-free.app/webhook"
     })
     return response.to_dict()
 
@@ -90,6 +91,11 @@ def fetch_new_transactions(access_token: str, cursor: str = None):
         next_cursor = response['next_cursor']
 
     log_plaid_call("transactions_sync COMPLETE", f"added={len(all_added)}")
+
+    # TEST Debug print
+    for txn in all_added:
+        print(f"[INFO] Plaid sent txn: {txn['name']} | ${txn['amount']} on {txn['date']}")
+
     return all_added, next_cursor
 
 # Save transactions to db
@@ -126,6 +132,10 @@ def save_transactions_to_db(transactions, user_id, bank_item_id, db):
 def sync_transactions_for_item(bank_item, user_id, db):
     access_token = decrypt(bank_item.access_token_encrypted)
     transactions, new_cursor = fetch_new_transactions(access_token, bank_item.cursor)
+    # TEST Debug print
+    if not transactions:
+        print(f"[INFO] No new transactions for item {bank_item.id}")
+        return
     save_transactions_to_db(transactions, user_id, bank_item.id, db)
     bank_item.cursor = new_cursor
     db.commit()

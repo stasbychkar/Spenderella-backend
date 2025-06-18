@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.db import sessionlocal
 from backend.models import BankItem
 from backend.utils.crypto import encrypt, decrypt
+from backend.routers.webhook_router import webhook_router
 
 app = FastAPI()
 
@@ -19,6 +20,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register webhook router
+app.include_router(webhook_router)
 
 @app.get("/link-token")
 def get_link_token():
@@ -34,11 +38,14 @@ def exchange_token(body: TokenModel):
     institution_name = body.institution_name
     user_id = 1 # hardcoded
 
+    webhook_url = "https://fa07-2601-600-9380-ca0-4dc5-8b48-1a4e-4b57.ngrok-free.app/webhook"
+
     new_item = save_bank_item(
         user_id=user_id,
         plaid_item_id=plaid_item_id,
         access_token_encrypted=access_token_encrypted,
-        institution_name=institution_name
+        institution_name=institution_name,
+        webhook_url=webhook_url
     )
 
     # Sync and save accounts

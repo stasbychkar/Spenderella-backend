@@ -1,13 +1,14 @@
 from backend.db import sessionlocal
 from backend.models import BankItem
 
-def save_bank_item(user_id: int, plaid_item_id: str, access_token_encrypted: str, institution_name: str):
+def save_bank_item(user_id: int, plaid_item_id: str, access_token_encrypted: str, institution_name: str, webhook_url: str):
     db = sessionlocal()
     new_item = BankItem(
         user_id=user_id,
         plaid_item_id=plaid_item_id,
         access_token_encrypted=access_token_encrypted,
-        institution_name=institution_name
+        institution_name=institution_name,
+        webhook_url=webhook_url
     )
     db.add(new_item)
     db.commit()
