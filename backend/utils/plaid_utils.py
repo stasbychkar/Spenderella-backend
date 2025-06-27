@@ -129,7 +129,8 @@ def save_transactions_to_db(transactions, user_id, bank_item_id, db):
         db.add(new_txn)
 
 # Fetch and save new transactions for a BankItem
-def sync_transactions_for_item(bank_item, user_id, db):
+def sync_transactions_for_item(bank_item, user_id):
+    db = sessionlocal()
     access_token = decrypt(bank_item.access_token_encrypted)
     transactions, new_cursor = fetch_new_transactions(access_token, bank_item.cursor)
     # TEST Debug print
@@ -139,11 +140,12 @@ def sync_transactions_for_item(bank_item, user_id, db):
     save_transactions_to_db(transactions, user_id, bank_item.id, db)
     bank_item.cursor = new_cursor
     db.commit()
+    db.close()
 
 # Fetch and save new transactions for all BankItem
 def sync_all_transactions(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
     items = db.query(BankItem).filter_by(user_id=user_id).all()
     for item in items:
-        sync_transactions_for_item(item, user_id, db)
+        sync_transactions_for_item(item, user_id)
     db.close()

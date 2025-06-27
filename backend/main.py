@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
 from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel
@@ -51,6 +51,9 @@ def exchange_token(body: TokenModel):
     # Sync and save accounts
     accounts = sync_accounts(access_token_encrypted)
     save_accounts(accounts, plaid_item_id, user_id)
+
+    # Sync and save transactions
+    sync_transactions_for_item(new_item, user_id)
 
     return {
         "message": "Bank item saved",
