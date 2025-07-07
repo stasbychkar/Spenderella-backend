@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
 from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel
@@ -64,3 +64,8 @@ def exchange_token(body: TokenModel):
 def sync_all():
     sync_all_transactions()
     return {"message": "Synced all transactions"}
+
+# Database endpoints
+@app.get('/db-get-dashboard-data')
+def db_get_dashboard_data():
+    return get_dashboard_data()

@@ -10,8 +10,9 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from datetime import datetime, timedelta
 from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account
+from backend.models import BankItem, Transaction, Account, GeneralCategory
 from backend.utils.crypto import decrypt
+from collections import defaultdict
 
 load_dotenv()
 
@@ -149,3 +150,73 @@ def sync_all_transactions(user_id: int = 1): # hardcoded for now
     for item in items:
         sync_transactions_for_item(item, user_id)
     db.close()
+
+def get_dashboard_data(user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    # Linked accounts
+    db_linked_accounts = db.query(Account).filter_by(user_id=user_id).all()
+    linked_accounts = [
+        {
+            "id": account.id,
+            "name": db.query(BankItem).filter_by(id=account.bank_item_id).first().institution_name,
+            "lastFour": account.mask,
+            "accountType": account.subtype
+        }
+        for account in db_linked_accounts
+    ]
+
+    # Transactions
+    db_transactions = (
+        db.query(Transaction)
+        .filter_by(user_id=user_id)
+        .filter(Transaction.amount > 0)  # Filter for expenses
+        .all()
+    )
+
+    transactions = [
+        {
+            "id": t.id,
+            "date": t.date.strftime("%Y-%m-%d"),
+            "merchant": t.merchant_name,
+            "category": t.personal_finance_category_primary,
+            "amount": t.amount
+        }
+        for t in db_transactions
+    ]
+
+    # Spent by category
+    spend_by_category = defaultdict(float)
+    for t in transactions:
+        print("The whole list:", t)
+        if t["amount"] > 0: # only expenses
+            spend_by_category[t["category"]] += float(abs(t["amount"]))
+
+    categories = db.query(GeneralCategory).all()
+    category_map = {c.name: c.color for c in categories}
+
+    spending_by_category = [
+        {
+            "name": cat,
+            "value": round(spend, 2),
+            "color": category_map.get(cat, "#6b7280")
+        }
+        for cat, spend in spend_by_category.items()
+    ]
+    db.close()
+
+    # Total spent
+    total_spent = 0
+
+    for t in transactions:
+        if t["amount"] > 0:
+            total_spent += t["amount"]
+
+    total_spent = abs(round(total_spent, 2))
+
+    return {
+        "total_spent": total_spent,
+        "linked_banks": linked_accounts,
+        "transactions": transactions,
+        "spending_by_category": spending_by_category,
+    }
