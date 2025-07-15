@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 from backend.db import engine
-from backend.models import GeneralCategory
+from backend.models import DefaultCategory
 
 categories = [
     {"name": "INCOME", "color": "#10b981"},
@@ -25,8 +25,8 @@ categories = [
 
 with Session(engine) as session:
     for cat in categories:
-        exists = session.query(GeneralCategory).filter_by(name=cat["name"]).first()
+        exists = session.query(DefaultCategory).filter_by(name=cat["name"]).first()
         if not exists:
-            session.add(GeneralCategory(name=cat["name"], color=cat["color"]))
+            session.add(DefaultCategory(name=cat["name"], color=cat["color"]))
     session.commit()
-    print("General categories seeded.")
+    print("Default categories seeded.")

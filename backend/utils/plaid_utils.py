@@ -10,9 +10,11 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from datetime import datetime, timedelta
 from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account, GeneralCategory
+from backend.models import BankItem, Transaction, Account, DefaultCategory
 from backend.utils.crypto import decrypt
 from collections import defaultdict
+from datetime import datetime, timedelta
+from sqlalchemy import and_
 
 load_dotenv()
 
@@ -167,10 +169,26 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
     ]
 
     # Transactions
+
+    # Only data from current month
+    now = datetime.now()
+    start_of_month = datetime(now.year, now.month, 1)
+    if now.month == 12:
+        start_of_next_month = datetime(now.year + 1, 1, 1)
+    else:
+        start_of_next_month = datetime(now.year, now.month + 1, 1)
+
     db_transactions = (
         db.query(Transaction)
         .filter_by(user_id=user_id)
         .filter(Transaction.amount > 0)  # Filter for expenses
+        .filter(
+            and_(
+                Transaction.date >= start_of_month,
+                Transaction.date < start_of_next_month
+            )
+        )
+        .order_by(Transaction.date.desc())
         .all()
     )
 
@@ -179,6 +197,7 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
             "id": t.id,
             "date": t.date.strftime("%Y-%m-%d"),
             "merchant": t.merchant_name,
+            "original_name": t.name,
             "category": t.personal_finance_category_primary,
             "amount": t.amount
         }
@@ -192,7 +211,7 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
         if t["amount"] > 0: # only expenses
             spend_by_category[t["category"]] += float(abs(t["amount"]))
 
-    categories = db.query(GeneralCategory).all()
+    categories = db.query(DefaultCategory).all()
     category_map = {c.name: c.color for c in categories}
 
     spending_by_category = [
@@ -220,3 +239,10 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
         "transactions": transactions,
         "spending_by_category": spending_by_category,
     }
+
+def get_transactions_data(user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    # Categories
+    db_all_categories = db.query(DefaultCategory).all() # should also retrieve info from custom categories
+    # continue working here
