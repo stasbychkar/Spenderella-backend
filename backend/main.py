@@ -70,6 +70,6 @@ def sync_all():
 def db_get_dashboard_data():
     return get_dashboard_data()
 
-@app.get('db-get-transactions-page-data')
+@app.get('/db-get-transactions-page-data')
 def db_get_transactions_page_data():
     return get_transactions_data()

@@ -195,7 +195,7 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
     transactions = [
         {
             "id": t.id,
-            "date": t.date.strftime("%Y-%m-%d"),
+            "date": t.date.strftime('%B %d, %Y'),
             "merchant": t.merchant_name,
             "original_name": t.name,
             "category": t.personal_finance_category_primary,
@@ -243,6 +243,37 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
 def get_transactions_data(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
-    # Categories
-    db_all_categories = db.query(DefaultCategory).all() # should also retrieve info from custom categories
-    # continue working here
+    # Categories 
+    # (For now: only default categories)
+    # (Later: add custom categories)
+    db_all_categories = db.query(DefaultCategory).all()
+    catogories = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "color": c.color,
+        }
+        for c in db_all_categories
+    ]
+
+    # Transactions
+    db_all_transactions = db.query(Transaction).filter_by(user_id=user_id).all()
+    transactions = [
+        {
+            "id": t.id,
+            "date": t.date.strftime('%B %d, %Y'),
+            "merchant": t.merchant_name,
+            "original_name": t.name,
+            "category": t.personal_finance_category_primary,
+            "amount": t.amount,
+            "bank_name": t.bank_item.institution_name,
+            "account_type": t.account.subtype,
+            "mask": t.account.mask,
+        }
+        for t in db_all_transactions
+    ]
+    
+    return {
+        "categories": catogories, 
+        "transactions": transactions,
+    }
