@@ -11,3 +11,7 @@ class AccessModel(BaseModel):
 class SyncRequestModel(BaseModel):
     access_token: str
     cursor: Optional[str] = None
+
+class UpdateCategoryRequest(BaseModel):
+    transaction_id: int
+    new_category: str

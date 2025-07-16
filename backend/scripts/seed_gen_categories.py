@@ -27,6 +27,6 @@ with Session(engine) as session:
     for cat in categories:
         exists = session.query(DefaultCategory).filter_by(name=cat["name"]).first()
         if not exists:
-            session.add(DefaultCategory(name=cat["name"], color=cat["color"]))
+            session.add(DefaultCategory(name=cat["name"].replace('_', ' ').title(), color=cat["color"]))
     session.commit()
     print("Default categories seeded.")

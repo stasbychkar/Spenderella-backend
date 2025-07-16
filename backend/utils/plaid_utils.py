@@ -1,4 +1,5 @@
 import os
+from fastapi import HTTPException
 import requests
 import plaid
 import logging
@@ -12,9 +13,10 @@ from datetime import datetime, timedelta
 from backend.db import sessionlocal
 from backend.models import BankItem, Transaction, Account, DefaultCategory
 from backend.utils.crypto import decrypt
+from backend.schemas.plaid_schemas import UpdateCategoryRequest
 from collections import defaultdict
 from datetime import datetime, timedelta
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 
 load_dotenv()
 
@@ -123,7 +125,7 @@ def save_transactions_to_db(transactions, user_id, bank_item_id, db):
             amount = txn['amount'],
             payment_channel = txn.get('payment_channel'),
             iso_currency_code = txn.get('iso_currency_code'),
-            personal_finance_category_primary = txn.get("personal_finance_category", {}).get("primary"),
+            personal_finance_category_primary = txn.get("personal_finance_category", {}).get("primary").replace('_', ' ').title(),
             personal_finance_category_detailed = txn.get("personal_finance_category", {}).get("detailed"),
             date = txn['date'],
             authorized_date = txn.get('authorized_date'),
@@ -222,6 +224,9 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
         }
         for cat, spend in spend_by_category.items()
     ]
+
+    spending_by_category.sort(key=lambda x: x["value"], reverse=True)
+
     db.close()
 
     # Total spent
@@ -257,7 +262,7 @@ def get_transactions_data(user_id: int = 1): # hardcoded for now
     ]
 
     # Transactions
-    db_all_transactions = db.query(Transaction).filter_by(user_id=user_id).all()
+    db_all_transactions = db.query(Transaction).filter_by(user_id=user_id).order_by(desc(Transaction.date)).all()
     transactions = [
         {
             "id": t.id,
@@ -273,7 +278,24 @@ def get_transactions_data(user_id: int = 1): # hardcoded for now
         for t in db_all_transactions
     ]
     
+    db.close()
+
     return {
         "categories": catogories, 
         "transactions": transactions,
     }
+
+
+def update_transaction_category(req: UpdateCategoryRequest):
+    db = sessionlocal()
+
+    transaction = db.query(Transaction).filter_by(id=req.transaction_id).first()
+    if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+    transaction.personal_finance_category_primary = req.new_category
+
+    db.commit()
+    db.close()
+
+    return {"message": "Category updated successfully"}
