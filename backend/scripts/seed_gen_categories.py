@@ -5,8 +5,9 @@ from backend.db import engine
 from backend.models import DefaultCategory
 
 categories = [
-    {"name": "INCOME", "color": "#10b981"},
-    {"name": "TRANSFER_IN", "color": "#06b6d4"},
+    # Not an expense
+    # {"name": "INCOME", "color": "#10b981"},
+    # {"name": "TRANSFER_IN", "color": "#06b6d4"},
     {"name": "TRANSFER_OUT", "color": "#0891b2"},
     {"name": "LOAN_PAYMENTS", "color": "#f97316"},
     {"name": "BANK_FEES", "color": "#ef4444"},
