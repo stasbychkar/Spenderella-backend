@@ -11,9 +11,9 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from datetime import datetime, timedelta
 from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account, DefaultCategory
+from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory
 from backend.utils.crypto import decrypt
-from backend.schemas.plaid_schemas import UpdateCategoryRequest
+from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory
 from collections import defaultdict
 from datetime import datetime, timedelta
 from sqlalchemy import and_, desc
@@ -155,6 +155,8 @@ def sync_all_transactions(user_id: int = 1): # hardcoded for now
         sync_transactions_for_item(item, user_id)
     db.close()
 
+
+# DASHBOARD
 def get_dashboard_data(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
@@ -245,6 +247,8 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
         "spending_by_category": spending_by_category,
     }
 
+
+# TRANSACTIONS
 def get_transactions_data(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
@@ -285,7 +289,6 @@ def get_transactions_data(user_id: int = 1): # hardcoded for now
         "transactions": transactions,
     }
 
-
 def update_transaction_category(req: UpdateCategoryRequest):
     db = sessionlocal()
 
@@ -299,3 +302,30 @@ def update_transaction_category(req: UpdateCategoryRequest):
     db.close()
 
     return {"message": "Category updated successfully"}
+
+
+# CATEGORIES
+def get_categories_page_data(user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    gen_categories = db.query(DefaultCategory).all()
+    cut_categories = db.query(CustomCategory.id, CustomCategory.name, CustomCategory.color).all()
+    db.close()
+
+    all_categories = gen_categories + cut_categories
+
+    return [
+        {"id": cat.id, "name": cat.name, "color": cat.color}
+        for cat in all_categories
+    ]
+
+def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    new_custom_category = CustomCategory(user_id=req.user_id, name=req.name, color=req.color)
+
+    db.add(new_custom_category)
+    db.commit()
+    db.close()
+
+    return {"message": "Category added successfully"}

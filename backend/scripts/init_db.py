@@ -1,6 +1,6 @@
 # creates database schema
 from backend.db import Base, engine
-from backend.models import User, BankItem, Account, Transaction, DefaultCategory
+from backend.models import User, BankItem, Account, Transaction, DefaultCategory, CustomCategory
 
 # # Drop all tabels
 # Base.metadata.drop_all(bind=engine)

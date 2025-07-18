@@ -15,3 +15,8 @@ class SyncRequestModel(BaseModel):
 class UpdateCategoryRequest(BaseModel):
     transaction_id: int
     new_category: str
+
+class AddCustomCategory(BaseModel):
+    user_id: int
+    name: str
+    color: str
