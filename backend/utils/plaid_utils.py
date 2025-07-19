@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 from backend.db import sessionlocal
 from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory
 from backend.utils.crypto import decrypt
-from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory
+from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory
 from collections import defaultdict
 from datetime import datetime, timedelta
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, asc, desc
 
 load_dotenv()
 
@@ -253,17 +253,27 @@ def get_transactions_data(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
     # Categories 
-    # (For now: only default categories)
-    # (Later: add custom categories)
-    db_all_categories = db.query(DefaultCategory).all()
-    catogories = [
+    db_all_def_categories = db.query(DefaultCategory).all()
+    def_catogories = [
         {
             "id": c.id,
             "name": c.name,
             "color": c.color,
         }
-        for c in db_all_categories
+        for c in db_all_def_categories
     ]
+
+    db_all_cus_categories = db.query(CustomCategory).all()
+    cus_categories = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "color": c.color,
+        }
+        for c in db_all_cus_categories
+    ]
+
+    catogories = def_catogories + cus_categories
 
     # Transactions
     db_all_transactions = db.query(Transaction).filter_by(user_id=user_id).order_by(desc(Transaction.date)).all()
@@ -308,16 +318,33 @@ def update_transaction_category(req: UpdateCategoryRequest):
 def get_categories_page_data(user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
-    gen_categories = db.query(DefaultCategory).all()
-    cut_categories = db.query(CustomCategory.id, CustomCategory.name, CustomCategory.color).all()
+    db_gen_categories = db.query(DefaultCategory).all()
+    db_cus_categories = db.query(CustomCategory).order_by(asc(CustomCategory.id)).all()
     db.close()
 
-    all_categories = gen_categories + cut_categories
-
-    return [
-        {"id": cat.id, "name": cat.name, "color": cat.color}
-        for cat in all_categories
+    gen_catogories = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "color": c.color,
+        }
+        for c in db_gen_categories
     ]
+
+    cus_catogories = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "color": c.color,
+        }
+        for c in db_cus_categories
+    ]
+
+    return {
+        "gen_catogories": gen_catogories,
+        "cus_catogories": cus_catogories,
+    }
+
 
 def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded for now
     db = sessionlocal()
@@ -329,3 +356,18 @@ def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded f
     db.close()
 
     return {"message": "Category added successfully"}
+
+def edit_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    category = db.query(CustomCategory).filter_by(id=req.id).first()
+    if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+
+    category.color = req.color
+    category.name = req.name
+
+    db.commit()
+    db.close()
+
+    return {"message": "Category updated successfully"}

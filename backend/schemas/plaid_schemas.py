@@ -20,3 +20,9 @@ class AddCustomCategory(BaseModel):
     user_id: int
     name: str
     color: str
+
+class EditCustomCategory(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    color: str
