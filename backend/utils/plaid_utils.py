@@ -215,8 +215,10 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
         if t["amount"] > 0: # only expenses
             spend_by_category[t["category"]] += float(abs(t["amount"]))
 
-    categories = db.query(DefaultCategory).all()
-    category_map = {c.name: c.color for c in categories}
+    default_categories = db.query(DefaultCategory).all()
+    custom_categories = db.query(CustomCategory).all()
+
+    category_map = {c.name: c.color for c in default_categories + custom_categories}
 
     spending_by_category = [
         {
@@ -349,7 +351,7 @@ def get_categories_page_data(user_id: int = 1): # hardcoded for now
 def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
-    new_custom_category = CustomCategory(user_id=req.user_id, name=req.name, color=req.color)
+    new_custom_category = CustomCategory(user_id=user_id, name=req.name, color=req.color)
 
     db.add(new_custom_category)
     db.commit()
@@ -360,7 +362,7 @@ def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded f
 def edit_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded for now
     db = sessionlocal()
 
-    category = db.query(CustomCategory).filter_by(id=req.id).first()
+    category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()
     if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 
@@ -371,3 +373,15 @@ def edit_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded
     db.close()
 
     return {"message": "Category updated successfully"}
+
+def delete_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()
+
+    db.delete(category)
+    db.commit()
+    db.close()
+
+    return {"message": "Custom category deleted successfully"}
+ 
