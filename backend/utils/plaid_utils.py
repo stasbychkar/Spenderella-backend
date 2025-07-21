@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from backend.db import sessionlocal
 from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory
 from backend.utils.crypto import decrypt
-from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory
+from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
 from collections import defaultdict
 from datetime import datetime, timedelta
 from sqlalchemy import and_, asc, desc
@@ -385,3 +385,33 @@ def delete_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcod
 
     return {"message": "Custom category deleted successfully"}
  
+
+#  Accounts
+def get_accounts_page(user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    db_linked_accounts = db.query(Account).filter_by(user_id=user_id).all()
+    linked_accounts = [
+        {
+            "id": account.id,
+            "bankName": db.query(BankItem).filter_by(id=account.bank_item_id).first().institution_name,
+            "lastFourDigits": account.mask,
+            "accountType": account.subtype
+        }
+        for account in db_linked_accounts
+    ]
+    
+    db.close()
+
+    return { "linked_accounts": linked_accounts }
+
+def delete_linked_account(req: DeleteLinkedAccount, user_id: int = 1): # hardcoded for now
+    db = sessionlocal()
+
+    account = db.query(Account).filter_by(id=req.id, user_id=user_id).first()
+
+    db.delete(account)
+    db.commit()
+    db.close()
+
+    return {"message": "Linked account deleted successfully"}

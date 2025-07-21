@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category, get_accounts_page, delete_linked_account
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
-from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory
+from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
 from backend.utils.plaid_utils import sync_accounts
 # import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -96,3 +96,12 @@ def db_edit_custom_category(req: EditCustomCategory):
 @app.put('/db-delete-custom-category')
 def db_delete_custom_category(req: EditCustomCategory):
     return delete_custom_category(req)
+
+# Accounts
+@app.get('/db-get-accounts-page')
+def db_get_accounts_page():
+    return get_accounts_page()
+
+@app.put('/db-delete-linked_account')
+def db_delete_linked_account(req: DeleteLinkedAccount):
+    return delete_linked_account(req)

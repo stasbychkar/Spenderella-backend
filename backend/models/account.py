@@ -23,3 +23,9 @@ class Account(Base):
 
     bank_item = relationship("BankItem", backref="accounts", passive_deletes=True)
     user = relationship("User", backref="accounts")
+    transactions = relationship(
+        "Transaction",
+        back_populates="account",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
