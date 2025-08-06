@@ -26,3 +26,6 @@ class EditCustomCategory(BaseModel):
     user_id: int
     name: str
     color: str
+
+class DeleteLinkedAccount(BaseModel):
+    id: int

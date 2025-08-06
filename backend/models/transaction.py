@@ -24,6 +24,6 @@ class Transaction(Base):
     authorized_date = Column(Date) # credit cards | when transaction happened (earlier)
     pending = Column(Boolean)
 
-    account = relationship("Account", backref="transactions", passive_deletes=True)
+    account = relationship("Account", back_populates="transactions")
     user = relationship("User", backref="transactions")
     bank_item = relationship("BankItem", backref="transactions", passive_deletes=True)

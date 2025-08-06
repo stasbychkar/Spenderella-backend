@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from datetime import datetime
 from backend.db import Base
 from sqlalchemy.orm import relationship
@@ -11,6 +11,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
+    is_demo = Column(Boolean)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     custom_categories = relationship("CustomCategory", backref="user", passive_deletes=True)

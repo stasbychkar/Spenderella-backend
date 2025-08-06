@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category, get_accounts_page, delete_linked_account, create_demo_user, clone_demo_user
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
-from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory
+from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
 from backend.utils.plaid_utils import sync_accounts
 # import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,12 +10,13 @@ from backend.db import sessionlocal
 from backend.models import BankItem
 from backend.utils.crypto import encrypt, decrypt
 from backend.routers.webhook_router import webhook_router
+from backend.utils.plaid_utils import USER_ID
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use "*" during dev. Later restrict to frontend origin.
+    allow_origins=["http://localhost:3000"],  # Later restrict to frontend origin.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,7 +37,7 @@ def exchange_token(body: TokenModel):
     access_token_encrypted = encrypt(access_token)
     plaid_item_id = plaid_response["item_id"]
     institution_name = body.institution_name
-    user_id = 1 # hardcoded
+    user_id = USER_ID # hardcoded
 
     webhook_url = "https://fa07-2601-600-9380-ca0-4dc5-8b48-1a4e-4b57.ngrok-free.app/webhook"
 
@@ -96,3 +97,18 @@ def db_edit_custom_category(req: EditCustomCategory):
 @app.put('/db-delete-custom-category')
 def db_delete_custom_category(req: EditCustomCategory):
     return delete_custom_category(req)
+
+# Accounts
+@app.get('/db-get-accounts-page')
+def db_get_accounts_page():
+    return get_accounts_page()
+
+@app.put('/db-delete-linked_account')
+def db_delete_linked_account(req: DeleteLinkedAccount):
+    return delete_linked_account(req)
+
+@app.post('/db-create-demo-user')
+def db_create_demo_user():
+    new_user = create_demo_user()
+    clone_demo_user(new_user.id)
+    return {"message": f"New demo user [id:{new_user.id}] was created successfully"}
