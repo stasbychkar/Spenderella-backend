@@ -30,4 +30,4 @@ with Session(engine) as session:
         if not exists:
             session.add(DefaultCategory(name=cat["name"].replace('_', ' ').title(), color=cat["color"]))
     session.commit()
-    print("Default categories seeded.")
+    print("General categories seeded.")

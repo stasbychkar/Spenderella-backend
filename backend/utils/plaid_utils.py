@@ -3,6 +3,7 @@ from fastapi import HTTPException
 import requests
 import plaid
 import logging
+import uuid
 from plaid import Configuration, ApiClient
 from plaid.api import plaid_api
 from dotenv import load_dotenv
@@ -11,12 +12,15 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from datetime import datetime, timedelta
 from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory
+from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory, User
 from backend.utils.crypto import decrypt
 from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
 from collections import defaultdict
 from datetime import datetime, timedelta
 from sqlalchemy import and_, asc, desc
+
+# Default user id for testing purposes
+USER_ID = 10
 
 load_dotenv()
 
@@ -55,7 +59,7 @@ def log_plaid_call(endpoint_name, details=""):
 def create_link_token():
     log_plaid_call("link_token_create")
     response = plaid_client.link_token_create({
-        'user': {'client_user_id': '1'}, # hardcoded internal user ID
+        'user': {'client_user_id': f'{USER_ID}'}, # hardcoded internal user ID
         "client_name": "Spenderella",
         "products": ["transactions"],
         "country_codes": ["US"],
@@ -148,7 +152,7 @@ def sync_transactions_for_item(bank_item, user_id):
     db.close()
 
 # Fetch and save new transactions for all BankItem
-def sync_all_transactions(user_id: int = 1): # hardcoded for now
+def sync_all_transactions(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
     items = db.query(BankItem).filter_by(user_id=user_id).all()
     for item in items:
@@ -157,8 +161,11 @@ def sync_all_transactions(user_id: int = 1): # hardcoded for now
 
 
 # DASHBOARD
-def get_dashboard_data(user_id: int = 1): # hardcoded for now
+def get_dashboard_data(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
+
+    # User info
+    username = db.query(User).filter_by(id=user_id).first().email
 
     # Linked accounts
     db_linked_accounts = db.query(Account).filter_by(user_id=user_id).all()
@@ -243,6 +250,7 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
     total_spent = abs(round(total_spent, 2))
 
     return {
+        "username": username,
         "total_spent": total_spent,
         "linked_banks": linked_accounts,
         "transactions": transactions,
@@ -251,7 +259,7 @@ def get_dashboard_data(user_id: int = 1): # hardcoded for now
 
 
 # TRANSACTIONS
-def get_transactions_data(user_id: int = 1): # hardcoded for now
+def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     # Categories 
@@ -265,7 +273,7 @@ def get_transactions_data(user_id: int = 1): # hardcoded for now
         for c in db_all_def_categories
     ]
 
-    db_all_cus_categories = db.query(CustomCategory).all()
+    db_all_cus_categories = db.query(CustomCategory).filter_by(user_id=user_id).all()
     cus_categories = [
         {
             "id": c.id,
@@ -317,11 +325,11 @@ def update_transaction_category(req: UpdateCategoryRequest):
 
 
 # CATEGORIES
-def get_categories_page_data(user_id: int = 1): # hardcoded for now
+def get_categories_page_data(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     db_gen_categories = db.query(DefaultCategory).all()
-    db_cus_categories = db.query(CustomCategory).order_by(asc(CustomCategory.id)).all()
+    db_cus_categories = db.query(CustomCategory).filter_by(user_id=user_id).order_by(asc(CustomCategory.id)).all()
     db.close()
 
     gen_catogories = [
@@ -348,7 +356,7 @@ def get_categories_page_data(user_id: int = 1): # hardcoded for now
     }
 
 
-def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded for now
+def add_custom_category(req: AddCustomCategory, user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     new_custom_category = CustomCategory(user_id=user_id, name=req.name, color=req.color)
@@ -359,7 +367,7 @@ def add_custom_category(req: AddCustomCategory, user_id: int = 1): # hardcoded f
 
     return {"message": "Category added successfully"}
 
-def edit_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded for now
+def edit_custom_category(req: EditCustomCategory, user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()
@@ -374,7 +382,7 @@ def edit_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded
 
     return {"message": "Category updated successfully"}
 
-def delete_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcoded for now
+def delete_custom_category(req: EditCustomCategory, user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()
@@ -387,7 +395,7 @@ def delete_custom_category(req: EditCustomCategory, user_id: int = 1): # hardcod
  
 
 #  Accounts
-def get_accounts_page(user_id: int = 1): # hardcoded for now
+def get_accounts_page(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     db_linked_accounts = db.query(Account).filter_by(user_id=user_id).all()
@@ -405,7 +413,7 @@ def get_accounts_page(user_id: int = 1): # hardcoded for now
 
     return { "linked_accounts": linked_accounts }
 
-def delete_linked_account(req: DeleteLinkedAccount, user_id: int = 1): # hardcoded for now
+def delete_linked_account(req: DeleteLinkedAccount, user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
     account = db.query(Account).filter_by(id=req.id, user_id=user_id).first()
@@ -415,3 +423,86 @@ def delete_linked_account(req: DeleteLinkedAccount, user_id: int = 1): # hardcod
     db.close()
 
     return {"message": "Linked account deleted successfully"}
+
+def create_demo_user():
+    db = sessionlocal()
+
+    id = uuid.uuid4().hex[:8]
+    new_user = User(email=f"demo-{id}", is_demo=True)
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+def clone_demo_user(new_user_id: int):
+    template_user_id = 1
+
+    db = sessionlocal()
+
+    # Clone bank_items
+    bank_items_map = {}
+    template_bank_items = db.query(BankItem).filter_by(user_id=template_user_id).all()
+    for bank_item in template_bank_items:
+        new_bank_item = BankItem(
+            user_id=new_user_id,
+
+            plaid_item_id=None,
+            plaid_institution_id=None,
+            access_token_encrypted=None,
+            institution_name=bank_item.institution_name,
+            cursor=None,
+            webhook_url=None,
+        )
+        db.add(new_bank_item)
+        db.flush()
+        bank_items_map[bank_item.id] = new_bank_item.id
+
+    # Clone accounts
+    accounts_map = {}
+    template_accounts = db.query(Account).filter_by(user_id=template_user_id).all()
+    for account in template_accounts:
+        new_account = Account(
+            user_id=new_user_id,
+
+            plaid_account_id=None,
+
+            bank_item_id=bank_items_map[account.bank_item_id],
+            name=account.name,
+            official_name=account.official_name,
+            type=account.type,
+            subtype=account.subtype,
+            mask=account.mask,
+        )
+        db.add(new_account)
+        db.flush()
+        accounts_map[account.id] = new_account.id
+    
+    # Clone transactions
+    template_transactions = db.query(Transaction).filter_by(user_id=template_user_id).all()
+    for transaction in template_transactions:
+        new_transaction = Transaction(
+            user_id=new_user_id,
+
+            plaid_transaction_id=None,
+            plaid_account_id=None,
+
+            account_id=accounts_map[transaction.account_id],
+            bank_item_id=bank_items_map[transaction.bank_item_id],
+            
+            merchant_name=transaction.merchant_name,
+            name=transaction.name,
+            amount=transaction.amount,
+            payment_channel=transaction.payment_channel,
+            iso_currency_code=transaction.iso_currency_code,
+            personal_finance_category_primary=transaction.personal_finance_category_primary,
+            personal_finance_category_detailed=transaction.personal_finance_category_detailed,
+            date=transaction.date,
+            authorized_date=transaction.authorized_date,
+            pending=transaction.pending,
+        )
+        db.add(new_transaction)
+
+    db.commit()
+    db.close()
