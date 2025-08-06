@@ -262,6 +262,9 @@ def get_dashboard_data(user_id: int = USER_ID): # hardcoded for now
 def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
     db = sessionlocal()
 
+    # User info
+    username = db.query(User).filter_by(id=user_id).first().email
+
     # Categories 
     db_all_def_categories = db.query(DefaultCategory).all()
     def_catogories = [
@@ -305,6 +308,7 @@ def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
     db.close()
 
     return {
+        "username": username,
         "categories": catogories, 
         "transactions": transactions,
     }

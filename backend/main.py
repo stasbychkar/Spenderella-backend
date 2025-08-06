@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category, get_accounts_page, delete_linked_account, create_demo_user, clone_demo_user
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
@@ -69,13 +69,26 @@ def sync_all():
 # Database endpoints
 # Dashboard
 @app.get('/db-get-dashboard-page-data')
-def db_get_dashboard_data():
-    return get_dashboard_data()
+def db_get_dashboard_data(request: Request):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+
+    return get_dashboard_data(user_id=user_id)
 
 # Transactions
 @app.get('/db-get-transactions-page-data')
-def db_get_transactions_page_data():
-    return get_transactions_data()
+def db_get_transactions_page_data(request: Request):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    return get_transactions_data(user_id=user_id)
 
 @app.put('/db-update-transaction-category')
 def db_update_transaction_category(req: UpdateCategoryRequest):
@@ -83,8 +96,14 @@ def db_update_transaction_category(req: UpdateCategoryRequest):
 
 # Categories
 @app.get('/db-get-categories-page-data')
-def db_get_categories_page_data():
-    return get_categories_page_data()
+def db_get_categories_page_data(request: Request):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    return get_categories_page_data(user_id=user_id)
 
 @app.put('/db-add-custom-category')
 def db_add_custom_category(req: AddCustomCategory):
@@ -100,8 +119,14 @@ def db_delete_custom_category(req: EditCustomCategory):
 
 # Accounts
 @app.get('/db-get-accounts-page')
-def db_get_accounts_page():
-    return get_accounts_page()
+def db_get_accounts_page(request: Request):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    return get_accounts_page(user_id=user_id)
 
 @app.put('/db-delete-linked_account')
 def db_delete_linked_account(req: DeleteLinkedAccount):
@@ -111,4 +136,4 @@ def db_delete_linked_account(req: DeleteLinkedAccount):
 def db_create_demo_user():
     new_user = create_demo_user()
     clone_demo_user(new_user.id)
-    return {"message": f"New demo user [id:{new_user.id}] was created successfully"}
+    return {"user_id": new_user.id}
