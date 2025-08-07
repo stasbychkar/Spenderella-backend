@@ -29,3 +29,9 @@ class EditCustomCategory(BaseModel):
 
 class DeleteLinkedAccount(BaseModel):
     id: int
+
+class RequestForm(BaseModel):
+    name: str
+    email: str
+    problem: str
+    openToCall: bool
