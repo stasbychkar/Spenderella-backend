@@ -12,9 +12,9 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from datetime import datetime, timedelta
 from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory, User
+from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory, User, Request
 from backend.utils.crypto import decrypt
-from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
+from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount, RequestForm
 from collections import defaultdict
 from datetime import datetime, timedelta
 from sqlalchemy import and_, asc, desc
@@ -510,3 +510,15 @@ def clone_demo_user(new_user_id: int):
 
     db.commit()
     db.close()
+
+# Landing
+def save_form(req: RequestForm):
+    db = sessionlocal()
+
+    new_request = Request(name=req.name, email=req.email, problem=req.problem, openToCall=req.openToCall)
+
+    db.add(new_request)
+    db.commit()
+    db.close()
+
+    return {"message": "Form saved successfully"}

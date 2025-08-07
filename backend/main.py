@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
-from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category, get_accounts_page, delete_linked_account, create_demo_user, clone_demo_user
+from backend.utils.plaid_utils import create_link_token, exchange_public_token, sync_all_transactions, sync_transactions_for_item, get_dashboard_data, get_transactions_data, update_transaction_category, get_categories_page_data, add_custom_category, edit_custom_category, delete_custom_category, get_accounts_page, delete_linked_account, create_demo_user, clone_demo_user, save_form
 from backend.services.bank_item_service import save_bank_item
 from backend.services.accounts_service import save_accounts
-from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount
+from backend.schemas.plaid_schemas import TokenModel, AccessModel, SyncRequestModel, UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount, RequestForm
 from backend.utils.plaid_utils import sync_accounts
 # import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -137,3 +137,8 @@ def db_create_demo_user():
     new_user = create_demo_user()
     clone_demo_user(new_user.id)
     return {"user_id": new_user.id}
+
+# Landing
+@app.post('/db-save-form')
+def db_save_form(req: RequestForm):
+    return save_form(req)
