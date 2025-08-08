@@ -11,6 +11,10 @@ from backend.models import BankItem
 from backend.utils.crypto import encrypt, decrypt
 from backend.routers.webhook_router import webhook_router
 from backend.utils.plaid_utils import USER_ID
+import os
+
+# Railway requirement
+os.makedirs("backend/logs", exist_ok=True)
 
 app = FastAPI()
 
