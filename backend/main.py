@@ -13,9 +13,6 @@ from backend.routers.webhook_router import webhook_router
 from backend.utils.plaid_utils import USER_ID
 import os
 
-# Railway requirement
-os.makedirs("backend/logs/plaid_api_calls.log", exist_ok=True)
-
 app = FastAPI()
 
 app.add_middleware(
