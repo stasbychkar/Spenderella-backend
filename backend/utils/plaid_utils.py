@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, asc, desc
 
 # Default user id for testing purposes
-USER_ID = 10
+USER_ID = 1
 
 load_dotenv()
 
