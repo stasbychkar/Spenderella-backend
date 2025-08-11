@@ -360,7 +360,7 @@ def get_categories_page_data(user_id: int = USER_ID): # hardcoded for now
     }
 
 
-def add_custom_category(req: AddCustomCategory, user_id: int = USER_ID): # hardcoded for now
+def add_custom_category(req: AddCustomCategory, user_id: int): # hardcoded for now
     db = sessionlocal()
 
     new_custom_category = CustomCategory(user_id=user_id, name=req.name, color=req.color)
@@ -371,7 +371,7 @@ def add_custom_category(req: AddCustomCategory, user_id: int = USER_ID): # hardc
 
     return {"message": "Category added successfully"}
 
-def edit_custom_category(req: EditCustomCategory, user_id: int = USER_ID): # hardcoded for now
+def edit_custom_category(req: EditCustomCategory, user_id: int):
     db = sessionlocal()
 
     category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()
@@ -386,7 +386,7 @@ def edit_custom_category(req: EditCustomCategory, user_id: int = USER_ID): # har
 
     return {"message": "Category updated successfully"}
 
-def delete_custom_category(req: EditCustomCategory, user_id: int = USER_ID): # hardcoded for now
+def delete_custom_category(req: EditCustomCategory, user_id: int):
     db = sessionlocal()
 
     category = db.query(CustomCategory).filter_by(id=req.id, user_id=user_id).first()

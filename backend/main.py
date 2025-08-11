@@ -110,16 +110,37 @@ def db_get_categories_page_data(request: Request):
     return get_categories_page_data(user_id=user_id)
 
 @app.put('/db-add-custom-category')
-def db_add_custom_category(req: AddCustomCategory):
-    return add_custom_category(req)
+def db_add_custom_category(request: Request, req: AddCustomCategory):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+
+    return add_custom_category(req, user_id)
 
 @app.put('/db-edit-custom-category')
-def db_edit_custom_category(req: EditCustomCategory):
-    return edit_custom_category(req)
+def db_edit_custom_category(request: Request, req: EditCustomCategory):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    
+    return edit_custom_category(req, user_id)
 
 @app.put('/db-delete-custom-category')
-def db_delete_custom_category(req: EditCustomCategory):
-    return delete_custom_category(req)
+def db_delete_custom_category(request: Request, req: EditCustomCategory):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+
+    return delete_custom_category(req, user_id)
 
 # Accounts
 @app.get('/db-get-accounts-page')
