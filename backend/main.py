@@ -19,7 +19,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://main.d1m3w5letdmnb2.amplifyapp.com"
+        "https://main.d1m3w5letdmnb2.amplifyapp.com",
+        "https://www.spenderella.xyz"
         ],
     allow_credentials=True,
     allow_methods=["*"],
