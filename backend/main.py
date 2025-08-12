@@ -97,11 +97,19 @@ def db_get_transactions_page_data(request: Request):
         user_id = int(demo_user_id) if demo_user_id else USER_ID
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid demo ID")
+    
     return get_transactions_data(user_id=user_id)
 
 @app.put('/db-update-transaction-category')
-def db_update_transaction_category(req: UpdateCategoryRequest):
-    return update_transaction_category(req)
+def db_update_transaction_category(request: Request, req: UpdateCategoryRequest):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    
+    return update_transaction_category(req, user_id)
 
 # Categories
 @app.get('/db-get-categories-page-data')

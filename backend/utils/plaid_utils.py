@@ -313,10 +313,10 @@ def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
         "transactions": transactions,
     }
 
-def update_transaction_category(req: UpdateCategoryRequest):
+def update_transaction_category(req: UpdateCategoryRequest, user_id: int):
     db = sessionlocal()
 
-    transaction = db.query(Transaction).filter_by(id=req.transaction_id).first()
+    transaction = db.query(Transaction).filter_by(id=req.transaction_id, user_id=user_id).first()
     if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
 
