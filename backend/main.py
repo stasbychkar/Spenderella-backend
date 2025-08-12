@@ -34,14 +34,19 @@ def get_link_token():
     return create_link_token()
 
 @app.post("/exchange-token")
-def exchange_token(body: TokenModel):
+def exchange_token(request: Request, body: TokenModel):
     plaid_response = exchange_public_token(body.public_token)
 
     access_token = plaid_response["access_token"]
     access_token_encrypted = encrypt(access_token)
     plaid_item_id = plaid_response["item_id"]
     institution_name = body.institution_name
-    user_id = USER_ID # hardcoded
+
+    demo_user_id = request.headers.get("x-demo-user-id")
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")  
 
     webhook_url = "https://fa07-2601-600-9380-ca0-4dc5-8b48-1a4e-4b57.ngrok-free.app/webhook"
 
@@ -154,8 +159,15 @@ def db_get_accounts_page(request: Request):
     return get_accounts_page(user_id=user_id)
 
 @app.put('/db-delete-linked_account')
-def db_delete_linked_account(req: DeleteLinkedAccount):
-    return delete_linked_account(req)
+def db_delete_linked_account(request: Request, req: DeleteLinkedAccount):
+    demo_user_id = request.headers.get("x-demo-user-id")
+
+    try:
+        user_id = int(demo_user_id) if demo_user_id else USER_ID
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid demo ID")
+    
+    return delete_linked_account(req, user_id)
 
 @app.post('/db-create-demo-user')
 def db_create_demo_user():

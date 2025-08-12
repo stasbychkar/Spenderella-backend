@@ -417,7 +417,7 @@ def get_accounts_page(user_id: int = USER_ID): # hardcoded for now
 
     return { "linked_accounts": linked_accounts }
 
-def delete_linked_account(req: DeleteLinkedAccount, user_id: int = USER_ID): # hardcoded for now
+def delete_linked_account(req: DeleteLinkedAccount, user_id):
     db = sessionlocal()
 
     account = db.query(Account).filter_by(id=req.id, user_id=user_id).first()
