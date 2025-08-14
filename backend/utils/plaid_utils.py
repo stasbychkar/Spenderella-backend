@@ -462,7 +462,7 @@ def create_demo_user():
 
 
 def clone_demo_user(new_user_id: int):
-    template_user_id = 1
+    template_user_id = os.getenv("TEMPLATE_USER_ID")
 
     db = sessionlocal()
 
