@@ -1,23 +1,38 @@
 import os
-from fastapi import HTTPException
-import requests
-import plaid
 import logging
 import uuid
+from collections import defaultdict
+from datetime import datetime
+
+import plaid
 from plaid import Configuration, ApiClient
 from plaid.api import plaid_api
-from dotenv import load_dotenv
+from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
-from plaid.model.accounts_get_request import AccountsGetRequest
-from datetime import datetime, timedelta
-from backend.db import sessionlocal
-from backend.models import BankItem, Transaction, Account, DefaultCategory, CustomCategory, User, Request
-from backend.utils.crypto import decrypt
-from backend.schemas.plaid_schemas import UpdateCategoryRequest, AddCustomCategory, EditCustomCategory, DeleteLinkedAccount, RequestForm
-from collections import defaultdict
-from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from fastapi import HTTPException
 from sqlalchemy import and_, asc, desc
+
+from backend.db import sessionlocal
+from backend.models import (
+    BankItem,
+    Transaction,
+    Account,
+    DefaultCategory,
+    CustomCategory,
+    User,
+    Request,
+)
+from backend.utils.crypto import decrypt
+from backend.schemas.plaid_schemas import (
+    UpdateCategoryRequest,
+    AddCustomCategory,
+    EditCustomCategory,
+    DeleteLinkedAccount,
+    RequestForm,
+)
+
 
 # Default user id for testing purposes
 USER_ID = 1
@@ -38,7 +53,6 @@ configuration = Configuration(
 )
 api_client = ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
-# ------------------------
 
 # Set up logger
 logger = logging.getLogger("plaid_calls")
@@ -47,19 +61,16 @@ handler = logging.FileHandler("backend/logs/plaid_api_calls.log")
 formatter = logging.Formatter('%(asctime)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-# Logging in the terminal
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(formatter)
-# logger.addHandler(stream_handler)
+
 
 def log_plaid_call(endpoint_name, details=""):
     logger.info(f"PLAID API CALL: {endpoint_name} | {details}")
-# ------------------------
+
 
 def create_link_token():
     log_plaid_call("link_token_create")
     response = plaid_client.link_token_create({
-        'user': {'client_user_id': f'{USER_ID}'}, # hardcoded internal user ID
+        'user': {'client_user_id': f'{USER_ID}'},
         "client_name": "Spenderella",
         "products": ["transactions"],
         "country_codes": ["US"],
@@ -68,18 +79,20 @@ def create_link_token():
     })
     return response.to_dict()
 
+
 def exchange_public_token(public_token):
     log_plaid_call("item_public_token_exchange")
     exchange_request = ItemPublicTokenExchangeRequest(public_token)
     exchange_response = plaid_client.item_public_token_exchange(exchange_request)
-    # access_token = exchange_response['access_token']
     return exchange_response.to_dict()
+
 
 def sync_accounts(access_token_encrypted: str):
     access_token = decrypt(access_token_encrypted)
     log_plaid_call("accounts_get", f"token_hash={hash(access_token)}")
     response = plaid_client.accounts_get(AccountsGetRequest(access_token=access_token))
     return response.accounts
+
 
 # Fetch new transactions for a BankItem
 def fetch_new_transactions(access_token: str, cursor: str = None):
@@ -101,11 +114,12 @@ def fetch_new_transactions(access_token: str, cursor: str = None):
 
     log_plaid_call("transactions_sync COMPLETE", f"added={len(all_added)}")
 
-    # TEST Debug print
-    for txn in all_added:
-        print(f"[INFO] Plaid sent txn: {txn['name']} | ${txn['amount']} on {txn['date']}")
+    # # TEST Debug print
+    # for txn in all_added:
+    #     print(f"[INFO] Plaid sent txn: {txn['name']} | ${txn['amount']} on {txn['date']}")
 
     return all_added, next_cursor
+
 
 # Save transactions to db
 def save_transactions_to_db(transactions, user_id, bank_item_id, db):
@@ -137,6 +151,7 @@ def save_transactions_to_db(transactions, user_id, bank_item_id, db):
         )
         db.add(new_txn)
 
+
 # Fetch and save new transactions for a BankItem
 def sync_transactions_for_item(bank_item, user_id):
     db = sessionlocal()
@@ -144,15 +159,16 @@ def sync_transactions_for_item(bank_item, user_id):
     transactions, new_cursor = fetch_new_transactions(access_token, bank_item.cursor)
     # TEST Debug print
     if not transactions:
-        print(f"[INFO] No new transactions for item {bank_item.id}")
+        # print(f"[INFO] No new transactions for item {bank_item.id}")
         return
     save_transactions_to_db(transactions, user_id, bank_item.id, db)
     bank_item.cursor = new_cursor
     db.commit()
     db.close()
 
+
 # Fetch and save new transactions for all BankItem
-def sync_all_transactions(user_id: int = USER_ID): # hardcoded for now
+def sync_all_transactions(user_id: int = USER_ID):
     db = sessionlocal()
     items = db.query(BankItem).filter_by(user_id=user_id).all()
     for item in items:
@@ -161,7 +177,7 @@ def sync_all_transactions(user_id: int = USER_ID): # hardcoded for now
 
 
 # DASHBOARD
-def get_dashboard_data(user_id: int = USER_ID): # hardcoded for now
+def get_dashboard_data(user_id: int = USER_ID):
     db = sessionlocal()
 
     # User info
@@ -180,7 +196,6 @@ def get_dashboard_data(user_id: int = USER_ID): # hardcoded for now
     ]
 
     # Transactions
-
     # Only data from current month
     now = datetime.now()
     start_of_month = datetime(now.year, now.month, 1)
@@ -259,7 +274,7 @@ def get_dashboard_data(user_id: int = USER_ID): # hardcoded for now
 
 
 # TRANSACTIONS
-def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
+def get_transactions_data(user_id: int = USER_ID):
     db = sessionlocal()
 
     # User info
@@ -313,6 +328,7 @@ def get_transactions_data(user_id: int = USER_ID): # hardcoded for now
         "transactions": transactions,
     }
 
+
 def update_transaction_category(req: UpdateCategoryRequest, user_id: int):
     db = sessionlocal()
 
@@ -329,7 +345,7 @@ def update_transaction_category(req: UpdateCategoryRequest, user_id: int):
 
 
 # CATEGORIES
-def get_categories_page_data(user_id: int = USER_ID): # hardcoded for now
+def get_categories_page_data(user_id: int = USER_ID):
     db = sessionlocal()
 
     db_gen_categories = db.query(DefaultCategory).all()
@@ -360,7 +376,7 @@ def get_categories_page_data(user_id: int = USER_ID): # hardcoded for now
     }
 
 
-def add_custom_category(req: AddCustomCategory, user_id: int): # hardcoded for now
+def add_custom_category(req: AddCustomCategory, user_id: int):
     db = sessionlocal()
 
     new_custom_category = CustomCategory(user_id=user_id, name=req.name, color=req.color)
@@ -370,6 +386,7 @@ def add_custom_category(req: AddCustomCategory, user_id: int): # hardcoded for n
     db.close()
 
     return {"message": "Category added successfully"}
+
 
 def edit_custom_category(req: EditCustomCategory, user_id: int):
     db = sessionlocal()
@@ -385,6 +402,7 @@ def edit_custom_category(req: EditCustomCategory, user_id: int):
     db.close()
 
     return {"message": "Category updated successfully"}
+
 
 def delete_custom_category(req: EditCustomCategory, user_id: int):
     db = sessionlocal()
@@ -417,6 +435,7 @@ def get_accounts_page(user_id: int = USER_ID): # hardcoded for now
 
     return { "linked_accounts": linked_accounts }
 
+
 def delete_linked_account(req: DeleteLinkedAccount, user_id):
     db = sessionlocal()
 
@@ -427,6 +446,7 @@ def delete_linked_account(req: DeleteLinkedAccount, user_id):
     db.close()
 
     return {"message": "Linked account deleted successfully"}
+
 
 def create_demo_user():
     db = sessionlocal()
@@ -439,6 +459,7 @@ def create_demo_user():
     db.refresh(new_user)
 
     return new_user
+
 
 def clone_demo_user(new_user_id: int):
     template_user_id = 1
@@ -510,6 +531,7 @@ def clone_demo_user(new_user_id: int):
 
     db.commit()
     db.close()
+
 
 # Landing
 def save_form(req: RequestForm):
